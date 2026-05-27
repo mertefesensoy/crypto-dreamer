@@ -1,0 +1,16 @@
+.venv
+.tools
+node_modules
+dashboard/node_modules
+dashboard/dist
+data/market.duckdb
+data/market.duckdb.wal
+*.log
+.pytest_cache
+__pycache__
+**/__pycache__
+.git
+.claude
+.vite
+docs
+tests

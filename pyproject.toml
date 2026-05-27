@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crypto-dreamer"
+version = "0.1.0"
+description = "Spot BTC RL trader with DreamerV3-style world model"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.5",
+    "gymnasium>=0.29",
+    "duckdb>=1.0",
+    "pandas>=2.2.3",
+    "numpy>=2.0",
+    "python-binance>=1.0.19",
+    "redis>=5.0.1",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "hydra-core>=1.3",
+    "pydantic>=2.6",
+    "lightning>=2.4",
+    "wandb>=0.18",
+    "einops>=0.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "mypy",
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+    "websockets>=12",
+    "ipython",
+]
+
+[tool.setuptools.packages.find]
+include = ["data*", "envs*", "agents*", "serve*", "models*", "training*"]
+exclude = ["tests*", "dashboard*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

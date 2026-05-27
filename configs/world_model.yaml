@@ -1,0 +1,74 @@
+defaults:
+  - _self_
+
+# mode: smoke = 100-step health check (5 episodes); diagnostic = 30k overnight (full data); full = 100k.
+# Phase 5.3 amendment: T reduced from 64 → 48 to amortize WDDM kernel-launch
+# tax on the laptop 4070. 48 minutes of context still spans agent action,
+# slow-feature regimes, and meaningful KL-dynamic horizon. v3 may revert
+# T=64 if we move to a Linux training environment.
+mode: diagnostic
+seed: 42
+
+data:
+  klines_db: data/market_ro.duckdb
+  steps_db: data/market.duckdb
+  symbol: BTCUSDT
+  interval: 1m
+  T: 48
+  batch_size: 32
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  max_episodes: null    # smoke mode auto-overrides to 5
+
+model:
+  n_vars: 15
+  seq_len: 256
+  d_model: 128
+  encoder_layers: 4
+  encoder_heads: 4
+  encoder_ff: 512
+  encoder_dropout: 0.1
+  mae_checkpoint: checkpoints/encoder_mae_full_raw.pt
+  hidden_dim: 256
+  n_latents: 32
+  n_classes: 32
+  rssm_mlp_hidden: 256
+  unimix: 0.01
+  n_actions: 5
+  action_emb_dim: 32
+  head_hidden: 256
+  reward_n_bins: 41
+  reward_low: -0.2
+  reward_high: 0.2
+  coef_dyn: 0.5
+  coef_rep: 0.1
+  free_bits: 1.0
+  lr: 1.0e-4
+  weight_decay: 1.0e-6
+  warmup_steps: 1000
+  burn_in: 5
+
+train:
+  max_steps: 30000      # diagnostic; full run overrides to 100000
+  max_hours: 0          # 0 = unbounded; gate is max_steps
+  precision: bf16-mixed
+  grad_clip: 1000.0     # DreamerV3-style permissive clip
+  val_check_interval: 2500
+  limit_val_batches: 100   # cap val to ~3.2K samples per pass; full val is too slow
+  log_every_n_steps: 50
+  ckpt_every_n_steps: 5000
+  compile: false   # disabled: Triton not available on Windows venv;
+                   # bench at 343 ms/step was already eager-mode (compile
+                   # was applied to model.__call__ but bench called
+                   # model._step directly, bypassing the compiled path).
+  compile_mode: reduce-overhead
+  # Heartbeat: cheap insurance against silent stalls (e.g. laptop sleep,
+  # wandb sync hang). Independent of W&B.
+  heartbeat_path: logs/heartbeat_phase5_3_diag.log
+  heartbeat_every_n: 100
+
+wandb:
+  project: crypto-dreamer
+  run_name: phase5.3-diag-30k
+  mode: online

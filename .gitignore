@@ -1,0 +1,45 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node / Vite
+node_modules/
+dashboard/node_modules/
+dashboard/dist/
+.vite/
+
+# Local data
+data/market.duckdb
+data/market.duckdb.wal
+*.duckdb
+*.duckdb.wal
+
+# Phase 5 artifacts
+checkpoints/
+wandb/
+outputs/
+.hydra/
+multirun/
+
+# Local Redis binary
+.tools/
+
+# Process logs
+*.log
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local Claude harness state
+.claude/launch.json

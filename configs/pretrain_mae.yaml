@@ -1,0 +1,39 @@
+defaults:
+  - _self_
+
+# mode: full = 2-hour bf16 run; tiny = 200-step verify run on a 5-episode subset.
+mode: full
+seed: 42
+
+data:
+  db_path: data/market_ro.duckdb   # snapshot, isolated from random-agent writers
+  symbol: BTCUSDT
+  interval: 1m
+  val_month: "2026-04"             # most recent full calendar month in the 2y window
+
+model:
+  n_vars: 12                       # 12 market features only for pretraining
+  seq_len: 256
+  d_model: 128
+  n_layers: 4
+  n_heads: 4
+  dim_ff: 512
+  dropout: 0.1
+
+train:
+  batch_size: 32
+  num_workers: 0                   # in-memory dataset; IPC overhead > savings
+  mask_ratio: 0.4
+  lr: 1.0e-4
+  weight_decay: 1.0e-6
+  warmup_steps: 1000
+  grad_clip: 1.0
+  max_steps: 100000                # large; gated by max_hours
+  max_hours: 2.0
+  precision: bf16-mixed
+  val_check_interval: 500          # eval every N training steps
+
+wandb:
+  project: crypto-dreamer
+  run_name: phase5.0.5-mae-pretrain
+  mode: online

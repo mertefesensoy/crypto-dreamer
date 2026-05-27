@@ -1,0 +1,38 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: dreamer-redis
+    command: redis-server --save "" --appendonly no
+    ports:
+      - "127.0.0.1:6379:6379"
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dreamer-api
+    environment:
+      DREAMER_REDIS_HOST: redis
+      DREAMER_REDIS_PORT: "6379"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: dreamer-ui
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+# Note: the agent stays manual. From the host:
+#     uv run python -m agents.run_random --episodes 1 --episode-hours 24 --speed 50
+# The agent reads the local DuckDB at data/market.duckdb and publishes to
+# the redis container (which forwards 6379 to localhost).

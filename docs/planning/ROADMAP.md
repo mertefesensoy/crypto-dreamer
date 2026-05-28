@@ -83,6 +83,18 @@ The next 2-3 weeks of work. Six PRs that must land before the OMI freeze. PRs 2-
 
 **Effort estimate:** 4-8 hours.
 
+- **Step-alignment trace (load-bearing).** Add a test that follows one
+  concrete trajectory step end to end · kline index `k` → observation
+  window → RSSM belief state `feat = [h_t, z_t]` → ForwardDistributionHead
+  input → `forward_returns[:, t]` target · and asserts every link
+  references the same `k`. PR 3 confirmed forward returns anchor on the
+  `step_log`-aligned bar (`k_decision + 1`, the bar the agent moved into,
+  one past the obs window). PR 4 must pair `feat` at step `t` with
+  `forward_returns` at the SAME step `t`; an off-by-one pairing here is a
+  silent temporal lag or look-ahead leak that a finite-loss smoke test
+  will NOT catch. This trace is the PR 4 analogue of PR 3's
+  `test_alignment_to_observation_window` and protects the whole pivot.
+
 ### **PR 5 · 30k Diagnostic Run + Gate Evaluation** · CRITICAL PATH
 
 **Goal:** Run the full 30k diagnostic with the forward-distribution head and determine whether the Phase 5.4 hypothesis holds.

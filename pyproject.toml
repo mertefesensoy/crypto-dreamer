@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Spot BTC RL trader with DreamerV3-style world model"
 requires-python = ">=3.11"
 dependencies = [
-    "torch>=2.5",
+    "torch==2.6.0",
     "gymnasium>=0.29",
     "duckdb>=1.0",
     "pandas>=2.2.3",
@@ -33,6 +33,16 @@ dev = [
     "httpx>=0.27",
     "websockets>=12",
     "ipython",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu124", marker = "sys_platform == 'win32'" },
 ]
 
 [tool.setuptools.packages.find]

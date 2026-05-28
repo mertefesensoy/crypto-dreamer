@@ -42,6 +42,8 @@ Future-work items that are not on the active roadmap but should not be forgotten
 
 **Slippage model calibration with L2 data** · large · The current slippage model in `envs/spot_btc.py` uses a fixed 2 bps assumption. Referenced in the environment code as needing calibration against "real Binance L2 data in v2." Requires order-book data ingestion and a statistical model of execution quality as a function of order size and market conditions. Research-track · defer until Phase 6 actor is generating realistic trade sizes.
 
+**Gap masking in forward-return targets** · small · `training/datamodule.py::_compute_forward_targets` detects mid-series klines gaps (positions where `ts[k+h] - ts[k] != h * 60` seconds) and reports per-horizon counts via `SpotBTCDataModule.gap_stats`, but does NOT mask the affected anchors in `forward_valid`. The PR 3 detector reported zero gaps across all four horizons on the production snapshot (see `docs/findings/2026-05-28-forward-returns-data-quality.md`), so this is precautionary work for future ingestions: pick a masking policy (skip the affected (k, h), interpolate, or re-anchor on the next contiguous bar) and wire it into `forward_valid`. Low effort, low current urgency. If a future ingestion surfaces non-trivial gap prevalence (brief OQ-3 sets 5% at any horizon as the priority-raise threshold), promote this to the active roadmap.
+
 ---
 
 ## Documentation

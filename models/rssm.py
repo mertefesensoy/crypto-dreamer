@@ -21,6 +21,7 @@ Unimix noise (1%) clamps each categorical's probability mass away from
 Reference: Hafner et al., "Mastering Diverse Domains through World
 Models" (DreamerV3, 2023).
 """
+
 from __future__ import annotations
 
 import torch
@@ -53,11 +54,15 @@ class RSSM(nn.Module):
         )
         self.gru = nn.GRUCell(mlp_hidden, hidden_dim)
 
-        self.prior_head = nn.Sequential(
-            nn.Linear(hidden_dim, mlp_hidden),
-            nn.GELU(),
-            nn.Linear(mlp_hidden, self.z_dim),
-        )
+        # ADR-006 linear-prior disambiguation (2026-05-31): the prior is
+        # restricted to a bare affine map h_t -> z-logits. The hidden layer
+        # and its GELU (the prior's expressive capacity) are removed · that
+        # is the single experimental variable. The original prior_head had
+        # no normalization (no LayerNorm on the input, between layers, or on
+        # the output), so per ADR-006 Section 2.2 the no-norm replacement is
+        # a plain Linear with nothing to preserve. posterior_head below is a
+        # separate module and is left unchanged.
+        self.prior_head = nn.Linear(hidden_dim, self.z_dim)
         self.posterior_head = nn.Sequential(
             nn.Linear(hidden_dim + x_dim, mlp_hidden),
             nn.GELU(),
@@ -148,6 +153,6 @@ class RSSM(nn.Module):
         - Returns (clipped_loss, unclipped_total_per_dim_summed) for
           logging.
         """
-        avg = kl_per_dim.mean(dim=0)               # (n_latents,)
-        clipped = avg.clamp(min=free_bits)          # per-latent floor
+        avg = kl_per_dim.mean(dim=0)  # (n_latents,)
+        clipped = avg.clamp(min=free_bits)  # per-latent floor
         return clipped.sum(), avg.sum()

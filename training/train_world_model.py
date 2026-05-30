@@ -10,6 +10,7 @@ Run:
         wandb.run_name=phase5.3-rssm-full \
         data.max_episodes=null
 """
+
 from __future__ import annotations
 
 import time
@@ -117,7 +118,8 @@ def main(cfg: DictConfig) -> None:
         encoder_ff=cfg.model.encoder_ff,
         encoder_dropout=cfg.model.encoder_dropout,
         mae_checkpoint=str(PROJECT_ROOT / cfg.model.mae_checkpoint)
-        if cfg.model.mae_checkpoint else None,
+        if cfg.model.mae_checkpoint
+        else None,
         hidden_dim=cfg.model.hidden_dim,
         n_latents=cfg.model.n_latents,
         n_classes=cfg.model.n_classes,
@@ -129,6 +131,11 @@ def main(cfg: DictConfig) -> None:
         reward_n_bins=cfg.model.reward_n_bins,
         reward_low=cfg.model.reward_low,
         reward_high=cfg.model.reward_high,
+        # Forward-distribution head config (PR 4). list(...) materialises the
+        # OmegaConf ListConfig into the plain lists the head expects.
+        forward_horizons=list(cfg.model.forward_horizons),
+        forward_bins=cfg.model.forward_bins,
+        forward_ranges=list(cfg.model.forward_ranges),
         coef_dyn=cfg.model.coef_dyn,
         coef_rep=cfg.model.coef_rep,
         free_bits=cfg.model.free_bits,
@@ -149,30 +156,37 @@ def main(cfg: DictConfig) -> None:
     # init_timeout=300: wandb's default 90s is sometimes too short on
     # this machine when the wandb CDN is slow. Same fix used in 5.0.5.
     import wandb as _wandb_pkg  # local import: settings only matters here
+
     wandb_logger = L.pytorch.loggers.WandbLogger(
-        project=cfg.wandb.project, name=cfg.wandb.run_name,
-        mode=cfg.wandb.mode, save_dir=str(PROJECT_ROOT),
+        project=cfg.wandb.project,
+        name=cfg.wandb.run_name,
+        mode=cfg.wandb.mode,
+        save_dir=str(PROJECT_ROOT),
         settings=_wandb_pkg.Settings(init_timeout=300),
     )
-    wandb_logger.log_hyperparams({
-        "seed": cfg.seed,
-        "shuffle_seed": cfg.seed,
-        "mode": cfg.mode,
-        "torch_version": torch.__version__,
-        "cuda_version": torch.version.cuda,
-        "cudnn_version": torch.backends.cudnn.version(),
-        "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",
-    })
+    wandb_logger.log_hyperparams(
+        {
+            "seed": cfg.seed,
+            "shuffle_seed": cfg.seed,
+            "mode": cfg.mode,
+            "torch_version": torch.__version__,
+            "cuda_version": torch.version.cuda,
+            "cudnn_version": torch.backends.cudnn.version(),
+            "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",
+        }
+    )
 
     callbacks: list[L.Callback] = []
     if cfg.train.max_hours and cfg.train.max_hours > 0:
         callbacks.append(TimeBudgetCallback(cfg.train.max_hours * 3600))
     heartbeat_path = cfg.train.get("heartbeat_path", None)
     if heartbeat_path:
-        callbacks.append(HeartbeatCallback(
-            path=str(PROJECT_ROOT / heartbeat_path),
-            every_n=int(cfg.train.get("heartbeat_every_n", 100)),
-        ))
+        callbacks.append(
+            HeartbeatCallback(
+                path=str(PROJECT_ROOT / heartbeat_path),
+                every_n=int(cfg.train.get("heartbeat_every_n", 100)),
+            )
+        )
 
     ckpt_dir = PROJECT_ROOT / "checkpoints"
     ckpt_dir.mkdir(exist_ok=True)
@@ -180,7 +194,7 @@ def main(cfg: DictConfig) -> None:
         dirpath=str(ckpt_dir),
         filename=f"world_model_{cfg.mode}_{{step}}",
         save_top_k=1,
-        monitor="val/loss_reward",     # gate spec: best by val reward NLL
+        monitor="val/loss_reward",  # gate spec: best by val reward NLL
         mode="min",
         save_last=True,
         every_n_train_steps=cfg.train.ckpt_every_n_steps,

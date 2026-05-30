@@ -41,6 +41,12 @@ model:
   reward_n_bins: 41
   reward_low: -0.2
   reward_high: 0.2
+  # Forward-distribution head (Phase 5.4 · ADR-002). Horizons in bars must
+  # match training.datamodule.FORWARD_HORIZONS; ranges are the per-horizon
+  # symmetric half-ranges sized from the 99.9% empirical return quantiles.
+  forward_horizons: [1, 5, 15, 30]
+  forward_bins: 41
+  forward_ranges: [0.005, 0.010, 0.018, 0.025]
   coef_dyn: 0.5
   coef_rep: 0.1
   free_bits: 1.0

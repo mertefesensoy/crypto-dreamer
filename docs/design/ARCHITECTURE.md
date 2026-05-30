@@ -264,6 +264,173 @@ If all gates pass, proceed to the 100k full run (Phase 5.5). If Gate 1 fails, re
 
 **Rationale:** The pretrained encoder already produces good feature representations (Phase 5.0.5 achieved train/mse_step = 0.1007). The pivot changes what consumes those representations, not how they are produced. Retraining the encoder would waste compute and introduce a confounding variable in the diagnostic.
 
+### ADR-005 · Gate 2 inconclusive-band resolution
+
+**Status:** Not instantiated · number intentionally vacant.
+
+Reserved in `ROADMAP.md` Section 2 (the Gate Decision Point) for the
+branch where Gate 1 passes AND Gate 2 lands in the [8.85, 8.86]
+inconclusive band · the case where KL releases but the forward loss is
+a statistical tie with the marginal baseline. That branch did not
+occur: the Phase 5.4 30k diagnostic (run `1rq8d8u5`) failed Gate 1
+outright (kl_unclipped 25.95 < 32), so the project took the
+Gate-1-failure branch (ADR-006) rather than the Gate-2-ambiguous one.
+This number is left vacant as a record of the decision tree · the gap
+documents which fork the project actually took.
+
+# ADR-006 · Gate 1 Failure Contingency · Prior Capacity Restriction
+
+This ADR belongs in `docs/design/ARCHITECTURE.md` Section 12 alongside
+ADR-000 through ADR-004 (paste it there to keep the ADR namespace in
+one place, per the convention that ADRs stay inline until the count
+exceeds ~10). It is delivered standalone for review.
+
+**Status:** Accepted · experiment queued, not yet run (as of
+2026-05-30).
+
+## Context
+
+The Phase 5.4 forward-distribution pivot was falsified by the 30k
+diagnostic (run `1rq8d8u5`, results in
+`docs/findings/2026-05-30-phase5-4-diagnostic-results.md`). Measured
+on the completed 30k checkpoint over 40 validation batches:
+
+- **Gate 1 (KL release): FAIL.** `kl_unclipped = 25.95` below the
+  32-nat free-bits floor; `loss_dyn` and `loss_rep` floor-pinned at
+  32.0007. The latent never carried information the prior could not
+  already predict. Flat at ~26 from pre-flight through 30k · no
+  release.
+- **Gate 2 (forward loss vs baseline): FAIL.** Per-horizon sum 9.7564
+  vs the 8.8632 marginal baseline · the model predicts forward returns
+  worse than the unconditional marginal. Per-horizon losses rise
+  monotonically with horizon (2.21 / 2.39 / 2.52 / 2.63); validation
+  forward loss rose after ~6k while train stayed flat (overfitting to
+  unpredictable conditional means).
+- **Gate 3 (reward NLL): PASS.** 0.4778, matching Phase 5.3. Shared
+  RSSM and reward pathway intact; the alignment trace confirms the
+  failure is architectural, not a wiring bug.
+
+**The decisive context is the two-target convergence.** crypto-dreamer
+has now collapsed the latent under two architecturally opposite
+targets: feature reconstruction (Phase 5.3, target too easy, `h_t`
+solved it alone) and forward-return distribution (Phase 5.4, target
+too noisy, nobody solved it). Two opposite failure mechanisms, one
+shared outcome. This narrows the cause to two non-exclusive
+hypotheses:
+
+- **Hypothesis A · over-expressive prior.** The `prior_head` MLP
+  (256 -> 256 -> 1024) is expressive enough to predict the posterior's
+  output from `h_t` alone, so the posterior's marginal information
+  contribution goes to zero and KL collapses to the floor · regardless
+  of target. This is the canonical DreamerV3 posterior-collapse mode.
+  The observed KL pattern (a brief spike to ~31 at step 5 then decay to
+  ~26 as the prior trains) is consistent with the prior progressively
+  out-competing the posterior.
+- **Hypothesis B · no exploitable signal.** BTC 1-min returns are
+  near-martingale in the first moment (sqrt(t) std scaling,
+  `ARCHITECTURE.md` Section 2), so there may be little conditional
+  stochastic structure at the regime level for a latent to encode even
+  if the prior allowed it. Gate 2's sub-baseline forward loss · the
+  model cannot beat the marginal · is direct evidence for this.
+
+A and B are not mutually exclusive and the current data cannot
+separate them, because no standard collapse remedy has been tried.
+
+## Decision
+
+**Run a single disambiguating experiment before any further
+architectural commitment: restrict the prior to a linear map and
+re-run the 30k diagnostic.**
+
+Concretely, change `prior_head` in `models/rssm.py` from the current
+two-layer MLP (256 -> 256 -> 1024 with GELU) to a single linear layer
+(256 -> 1024, no hidden layer, no activation). Everything else held
+fixed · same encoder, posterior, free-bits floor (1.0), coefficients
+(coef_dyn 0.5, coef_rep 0.1), forward-distribution head and target,
+T=48, batch 32, lr 1e-4, 30k steps. Only the prior's capacity changes.
+
+**Rationale for linear (aggressive) over a milder restriction.** The
+goal of this experiment is disambiguation, not tuning. A linear prior
+maximally handicaps the prior's ability to out-predict the posterior,
+giving the sharpest possible read on whether KL CAN release. A milder
+restriction (e.g. 256 -> 64 -> 1024) risks an ambiguous middle result.
+A linear prior is the cleanest single-run test of Hypothesis A. If the
+latent releases even when the prior is a bare affine map, A is
+confirmed and a follow-up run can find the right middle capacity; if
+it will not release even then, that is the strongest available
+evidence against A and for B.
+
+**Three outcomes, each diagnostic:**
+
+1. **KL releases (kl_unclipped > 32) AND Gate 2 improves below
+   baseline.** Hypothesis A was the problem; the latent is alive and
+   useful. Continue the forward-distribution pivot with the restricted
+   prior; proceed toward a gated Phase 5.5. Write the result as a
+   follow-up finding and, if needed, ADR-007 tuning prior capacity.
+
+2. **KL releases BUT Gate 2 still fails (forward loss stays at or
+   above baseline).** The latent now carries information, but that
+   information does not help predict returns · confirming Hypothesis B
+   for the current target. The latent is alive but the TARGET is
+   wrong. Next step becomes target redesign: predict conditional
+   VOLATILITY / scale (which volatility-clustering makes genuinely
+   predictable) rather than a location-bearing return distribution.
+   This is contingency option (d), to be written as its own ADR.
+
+3. **KL still will not release even with a linear prior.** Strongest
+   available evidence that the data lacks regime-level stochastic
+   structure a latent variable model can capture in this setup.
+   Escalate to contingency option (c): drop the world-model paradigm
+   and train a model-free RL agent (PPO/SAC) on the same observation
+   and reward, treated as the honest baseline. To be written as its
+   own ADR with the model-free comparison as the deciding experiment.
+
+## Contingency options NOT chosen now (documented for the branch tree)
+
+- **Option (b) · KL warmup schedule** (ramp KL weight from 0 over ~5k
+  steps). Deliberately deferred. The diagnostic must first establish
+  whether a capacity fix (a) alone releases KL; layering a warmup on
+  top now would confound which intervention mattered. Revisit only if
+  the linear-prior run is itself ambiguous. Backlog item exists.
+- **Option (d) · target redesign to conditional volatility.** The
+  likely next step if outcome 2 obtains. Not run now because it is
+  premature until we know the latent CAN engage (outcome 1 or 2
+  distinguishes this).
+- **Option (c) · model-free RL paradigm change.** The honest endpoint
+  if outcome 3 obtains. Not run now because declaring the world-model
+  paradigm dead without trying the canonical collapse fix would be
+  premature.
+
+## Consequences
+
+- **Phase 5.5 (100k full run) is blocked** until a diagnostic passes
+  Gate 1 and Gate 2. The roadmap's State B freeze posture holds.
+- **OMI freeze handling.** If the linear-prior experiment runs and is
+  evaluated before the OMI freeze, the thaw state is "outcome N
+  obtained, next experiment is X." If it does not run in time, the
+  freeze state is "ADR-006 written, run the linear-prior experiment
+  first on thaw" · a complete, decision-ready state either way.
+- **Gate reads come from the checkpoint, not W&B.** Per the diagnostic
+  results doc Section 5, W&B logging silently failed mid-run on
+  `1rq8d8u5`. Tonight's experiment and all unattended runs must read
+  gates via the checkpoint-eval path (`_gate.py` / future
+  `scripts/eval_gates.py`) and treat the heartbeat as the
+  authoritative completion signal. Do not trust the charts.
+- **`prior_head` is the only model change.** `models/rssm.py` is
+  modified for the prior layer; no change to the encoder, posterior,
+  heads, datamodule, or loss composition. This keeps the experiment a
+  clean single-variable test.
+
+## Verification (for the experiment when it runs)
+
+Same precondition gate as brief 4.1 (powercfg standby/monitor = 0, AC
+confirmed, CUDA available, 1000-step pre-flight finite). Run 30k. Read
+`kl_unclipped`, the per-horizon forward sum, and `loss_reward` from the
+final checkpoint via the checkpoint-eval path. Classify into outcome
+1, 2, or 3 above. `loss_reward` should remain ~0.48 (a regression would
+indicate the prior change broke the shared pathway · unlikely, since
+only the prior is touched).
+
 ---
 
 ## Cold-Start Checklist

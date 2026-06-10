@@ -190,6 +190,11 @@ The raw, unclipped KL (kl_unclipped) is logged separately from the clipped losse
 
 ## 10 · Training Protocol
 
+**Status note (2026-06-10):** this section describes the WORLD-MODEL
+training protocol and is retained as historical context. Stage 2 /
+Phase 5.5 is BLOCKED per ADR-007 (Section 12) · the active line of work
+is the model-free PPO baseline.
+
 Training proceeds in two stages gated by validation diagnostics.
 
 **Stage 1 · Diagnostic (30k steps).** A short run to verify that loss curves are healthy and KL releases from the free-bits floor. Configuration: T = 48 trajectory length, B = 32 batch size, bf16-mixed precision, AdamW optimizer with lr = 1e-4, weight_decay = 1e-6, 1000-step linear LR warmup, gradient clipping at 1000 (DreamerV3-style permissive clipping that catches only catastrophic gradient explosions, not normal training dynamics). Validation runs every 2500 steps over 100 batches (~3200 samples). Checkpoints saved every 5000 steps. T = 48 is a deliberate relaxation from T = 64 to amortize WDDM kernel-launch overhead on Windows; future Linux training may revert to T = 64.
@@ -202,6 +207,11 @@ All training configuration lives in `configs/world_model.yaml`.
 
 ## 11 · Validation Gates
 
+**Status note (2026-06-10):** these are the WORLD-MODEL gates, retained
+as historical context. Both 30k diagnostics failed Gate 1 (ADR-006
+Outcome 3) and Phase 5.5 is BLOCKED per ADR-007 (Section 12); the
+active gate set is ADR-007's pre-registered baseline gate.
+
 The following gates are evaluated after the 30k diagnostic run. All must pass before advancing to the 100k full run.
 
 **Gate 1 · KL release.** KL_unclipped must exceed 32 nat by step 20k. This is the load-bearing gate. It confirms that z_t is encoding information the prior cannot predict from action history alone. If KL remains pinned at or below 32 nat (as happened in Phase 5.3 with the feature-reconstruction decoder, which finished at 25.7 nat), the forward-distribution target has insufficient stochastic structure and the pivot has failed.
@@ -212,7 +222,7 @@ Drift band. The marginal baseline reported in `docs/findings/2026-05-27-marginal
 
 **Gate 3 · Reward NLL stability.** Validation reward NLL should be approximately 0.48, consistent with prior runs (Phase 5.3 achieved val/loss_reward = 0.478). A significant regression would indicate the pivot introduced a bug in the shared RSSM or reward pathway.
 
-If all gates pass, proceed to the 100k full run (Phase 5.5). If Gate 1 fails, revisit the architecture per ADR-003's contingency options: prior capacity restriction, KL warmup schedule, or model paradigm change. If Gate 2 fails with Gate 1 passing, the problem is in the head architecture or the target computation, not the RSSM. If Gate 3 fails, debug the shared components (encoder, RSSM, optimizer configuration).
+If all gates pass, proceed to the 100k full run (Phase 5.5 · now BLOCKED per ADR-007; this branch was never taken). If Gate 1 fails, revisit the architecture per ADR-003's contingency options: prior capacity restriction, KL warmup schedule, or model paradigm change · this is the branch the project took (ADR-006 -> Outcome 3 -> ADR-007). If Gate 2 fails with Gate 1 passing, the problem is in the head architecture or the target computation, not the RSSM. If Gate 3 fails, debug the shared components (encoder, RSSM, optimizer configuration).
 
 ## 12 · Architectural Decision Records
 
@@ -285,8 +295,10 @@ ADR-000 through ADR-004 (paste it there to keep the ADR namespace in
 one place, per the convention that ADRs stay inline until the count
 exceeds ~10). It is delivered standalone for review.
 
-**Status:** Accepted · experiment queued, not yet run (as of
-2026-05-30).
+**Status:** Accepted · executed 2026-05-31 · Outcome 3 obtained
+(Hypothesis A falsified) · committed `a3941d3` · results in
+`docs/findings/2026-05-31-adr006-linear-prior-results.md` · follow-on
+decision recorded in ADR-007.
 
 ## Context
 
@@ -433,6 +445,425 @@ only the prior is touched).
 
 ---
 
+### ADR-007 · Model-free PPO baseline · world-model paradigm dropped (option c)
+
+**Status:** Proposed · 2026-06-10. The operator flips this to Accepted on
+commit. The pre-registered evaluation gate below becomes binding at that
+moment; thresholds are not adjusted afterward. Any ambiguity discovered
+later is resolved by an operator ruling recorded here as an amendment
+BEFORE the gate is read · never after.
+
+**Context.** The ADR-006 linear-prior disambiguation experiment ran to
+completion and was committed in `a3941d3` (2026-05-31; results in
+`docs/findings/2026-05-31-adr006-linear-prior-results.md`). Four-decimal
+values below are quoted from the operating briefing
+(`docs/briefings/2026-06-10-adr007-model-free-baseline-briefing.md`
+Section 1), which records the same checkpoint eval at full precision; the
+findings doc rounds to 3 decimals. Components and sums are independently
+rounded, so the per-horizon values below sum to 9.6141 at 4 dp while the
+directly measured sum is 9.6142 · a rounding artifact, not an arithmetic
+error. Gates were re-derived from the evidence checkpoint
+`checkpoints/world_model_diagnostic_step=30000-v2.ckpt` via
+`scripts/eval_gates.py` (40 val batches, seed 42, clean load · 0 missing /
+0 unexpected keys) · never from W&B (W&B silently desynced at ~step 612 on
+run `1rq8d8u5`, per the findings doc Section 0, and is not a gate source):
+
+- Gate 1 · `kl_unclipped` = 26.31 vs the 32-nat free-bits floor -> FAIL.
+  No KL release; +0.36 vs the MLP prior's 25.95; seed-stable 26.31 +/-
+  0.002 across seeds 42/0/123. `loss_dyn`/`loss_rep` floor-clipped at
+  32.0055 · the latent is pinned.
+- Gate 2 · forward loss sum = 9.6142 vs the 8.8632 marginal baseline ->
+  FAIL (h1 2.2152 / h5 2.3494 / h15 2.4943 / h30 2.5552) · the model
+  still predicts forward returns worse than the unconditional marginal.
+- Gate 3 · reward NLL = 0.4776 ~= 0.478 -> PASS · wiring and the shared
+  reward pathway intact; the failure is architectural, not a bug.
+
+This is **Outcome 3** of ADR-006's pre-registered decision tree: the KL
+will not release even against a maximally handicapped (bare affine)
+prior. **Hypothesis A (over-expressive prior) is falsified.** The
+supported interpretation is **Hypothesis B**: BTC 1-min data lacks
+regime-level stochastic structure that a latent-variable world model can
+exploit in this setup. The stochastic latent has now collapsed under two
+architecturally opposite targets (Phase 5.3 feature reconstruction · too
+easy · `h_t` solved it alone; Phase 5.4 forward-return distribution · too
+noisy · nobody solved it) and across the full prior-capacity range
+(2-layer MLP down to bare linear).
+
+**Decision (operator-ratified).** Adopt ADR-006 contingency option (c):
+
+- DROP the world-model / latent paradigm for this line of work.
+- STAND UP a model-free RL baseline · **PPO** on the discrete 5-action
+  space (SAC-discrete acceptable only as a documented fallback, operator
+  approval required first) · trained on the SAME observations and the
+  SAME reward, evaluated on the SAME held-out calendar partition, as the
+  honest apples-to-apples comparison.
+- The c-vs-d fork was the operator's call, ratified at the ADR-007 review
+  gate. No agent re-opens it.
+
+Comparability constraints (what "unchanged" means, binding for the
+implementation):
+
+- **Env** · `envs/spot_btc.py` as-is: Discrete(5) target allocation
+  {0, 25, 50, 75, 100}% of equity, 0.1% taker fee, linear slippage
+  (2 bps default), reward = log-return - 0.05 x turnover, 1440-step
+  episodes, 50%-equity termination guardrail. No dynamics, fee, slippage,
+  or reward changes. Permitted additive-only interface changes:
+  deterministic episode-start selection through `reset(options=...)` for
+  evaluation, and partition-aware start sampling for training. Neither
+  may alter `step()` semantics. `episode_steps` is an EXISTING
+  constructor parameter (`envs/spot_btc.py:84`, default 1440): training
+  and the agent/flat/random evaluation use 1440; the B&H comparator alone
+  instantiates the env with `episode_steps=4320` for its one per-span
+  episode · a constructor argument, not a code or `step()`-semantics
+  change.
+- **Data source (bound)** · every training AND evaluation env is
+  constructed over the frozen snapshot `data/market_ro.duckdb`
+  (`db_path` passed explicitly; the `DREAMER_DATA` environment variable
+  must be unset or equal to it). The env's default `data/market.duckdb`
+  is the live DB and is NOT acceptable for any ADR-007 run. Identity is
+  asserted mechanically by Track B (G)(vi), not assumed.
+- **Observations** · the env-native dict · `window` (256, 12) float32
+  from the canonical `envs.spot_btc.compute_feature_block` (column order
+  `FEATURE_NAMES`, append-only) + `portfolio` (3,). Identical feature
+  content to what the world-model pipeline consumed (its (256, 15) tensor
+  was the same 12 features with the 3 portfolio scalars broadcast · a
+  packaging detail, not a feature difference). No new features, no
+  changed normalization.
+- **Training data** · PPO training rollouts are restricted to the train
+  partition: an episode start `s` (kline row index) is valid iff
+  `s >= 256` and every bar in `[s, s + 1440]` falls on a UTC
+  day-of-month with `(day - 1) / days_in_month < 0.85`. The 256-bar
+  observation lookback may cross partition boundaries · identical to the
+  world-model convention, where only the trajectory rows were
+  partition-pure. Carried over deliberately for comparability. The
+  training loop writes every realized episode start index to
+  `artifacts/adr007/train_starts_seed<NN>.json`; partition purity is
+  verified mechanically both pre-run and post hoc per (G)(v) · it is a
+  gate precondition, not a prose promise.
+- **Training budget and run of record (pre-registered, anti-gaming)** ·
+  2,000,000 env steps per seed, fixed in config before launch. The
+  evaluated artifact is the FINAL checkpoint of each seed · no checkpoint
+  shopping, no eval-driven early stopping, no train-until-pass · and the
+  prohibition covers ACROSS-run shopping too: the SHA-256 of
+  `configs/ppo_baseline.yaml` is recorded in
+  `artifacts/adr007/run_log.md` before launch and ratified by the
+  operator's explicit launch approval; the first completed 3-seed run
+  after that freeze is the RUN OF RECORD, and the gate may be read only
+  from its final checkpoints. Periodic intermediate checkpoints ARE
+  saved during training (seed and step in the filename) for forensics
+  and are explicitly GATE-INELIGIBLE; their existence never substitutes
+  for a missing final checkpoint (operator amendment A2 · 2026-06-10).
+  Any relaunch or config change, for any
+  reason (including a crashed seed or a "trial" run), requires an
+  operator amendment recorded BEFORE the new launch · GPU
+  non-determinism makes even an identical-config relaunch a free reroll
+  of the seed triple, so relaunches are never agent-discretionary.
+  Before the official gate read, NO policy may be evaluated on any
+  enumerated eval episode or any val-partition bar, with one pre-named
+  exception: the smoke subset · the first enumerated episode
+  (2024-05-28 00:00) plus the comparators on that same episode · whose
+  results verify harness plumbing only and select nothing. Every
+  invocation of `scripts/eval_baseline_gates.py` appends an entry
+  (timestamp, checkpoint hash, episode set, purpose) to
+  `artifacts/adr007/run_log.md`, so off-the-books gate reads are
+  visible. If the budget proves infeasible on the 4070 (>12 h/seed
+  projected), halt and report · do not silently reduce.
+- **Stack** · torch 2.6.0+cu124 pinned via uv sources; CUDA-build
+  verification after any dependency change. Hyperparameters in
+  `configs/ppo_baseline.yaml`, not hardcoded. `wandb.mode: offline` set
+  EXPLICITLY in that config (not inherited); W&B's only trusted role is
+  the heartbeat "did it finish" signal. Checkpoints to `checkpoints/`
+  with seed and step in the filename. Deterministic seeding throughout.
+- **T=48 (briefing Section 3 invariant) · proposed ruling for operator
+  ratification with this ADR** · T was the world model's BPTT sequence
+  length, a supervised-batching parameter whose WDDM
+  kernel-launch-amortization rationale is specific to backprop through
+  time. PROPOSED: it does not transfer to model-free on-policy rollouts;
+  PPO's rollout-segment length is a free hyperparameter recorded in the
+  frozen config. If the operator instead rules it carried over, the
+  config sets rollout-segment length = 48 before the freeze. Either way
+  the ruling is recorded here · the invariant is not silently dropped.
+
+**Rejected alternative · option (d) · considered and DEFERRED (not
+dead).** Keep the RSSM and redesign the decoder target to conditional
+volatility/scale · which volatility-clustering makes genuinely
+predictable, and which the reproducible-but-tiny directional moves in the
+ADR-006 result (+0.36 KL, -0.15 forward vs the MLP prior · correctly
+signed for Hypothesis A but ~5.7 nats and ~0.75 nats short of their
+thresholds) keep faintly alive. Deferred because: (i) the latent has
+already collapsed under two opposite targets and the full prior-capacity
+range · a third target redesign would be the third consecutive bet on a
+paradigm with zero confirmed wins on this data; (ii) the model-free
+baseline is prerequisite evidence either way · any future latent-paradigm
+revival (including option d) must beat it to justify its complexity;
+(iii) sequencing, not killing: the volatility-target idea remains
+recorded here and in ADR-006's contingency menu, and re-opens only by
+operator decision after the baseline result is in.
+
+**Consequences.**
+
+- Phase 5.5 (world-model scaling / 100k run) is BLOCKED · permanently for
+  this line of work unless the operator re-opens it.
+- The RSSM and `checkpoints/world_model_diagnostic_step=30000-v2.ckpt`
+  are frozen historical evidence · no retraining, modification,
+  fine-tuning, or extension.
+- The model-free baseline becomes the new reference point: every future
+  approach on this data/env/reward must be compared against it.
+- A new harness `scripts/eval_baseline_gates.py` mirrors the conventions
+  of `scripts/eval_gates.py` (checkpoint-driven, fixed seed, deterministic
+  eval, never W&B) and additionally writes JSON + markdown artifacts to
+  `artifacts/adr007/` · gate classification reads ONLY those on-disk
+  artifacts. (`eval_gates.py`'s stdout-only output is superseded for the
+  baseline.)
+- An env-reuse assertion suite (Track B) must pass before any full run:
+  it verifies the calendar-partition rule and feature-pipeline identity
+  (NOT step-log window-index identity, which is a supervised-eval concept
+  and does not apply to env rollouts) · see gate Section G below.
+
+**Pre-registered evaluation gate.** Hard thresholds, every criterion
+binary, classification in Phase 3 is purely mechanical. PASS requires ALL
+of G-BL1..G-BL4 to be true on the designated median seed. Anything else
+is FAIL. No partial pass, no rounding (comparisons at float64 precision
+of the artifact values), no judgment calls.
+
+**(A) Held-out data · calendar-partition definition.** "Same held-out
+data" is defined at the calendar-partition level, not the step-log
+window-index level: a UTC timestamp is held-out iff its day-of-month
+satisfies `(day - 1) / days_in_month >= 0.85` · the exact rule of
+`training/datamodule.py:396` with `val_month_frac = 0.85`, the same rule
+behind the world-model diagnostics and the 8.8632 marginal baseline
+(`docs/findings/2026-05-27-marginal-baseline.md`). Data span: the
+BTCUSDT 1m snapshot `data/market_ro.duckdb`, 1,051,201 rows,
+2024-05-03 03:00 -> 2026-05-03 03:00 UTC (gap-free at every horizon per
+`docs/findings/2026-05-28-forward-returns-data-quality.md` · note that
+doc's Sources line says the span ends 2026-04-30, which is stale prose:
+1,051,201 gap-free 1-min rows force exactly 730 days, and the snapshot's
+actual MAX(ts) was re-verified read-only as 2026-05-03 03:00 on
+2026-06-10; the doc's gap TABLES, not its span prose, are the cited
+evidence). Every
+evaluation episode start has >= 256 bars of history. Policies are rolled
+out IN THE ENV over these spans.
+
+**(B) Evaluation episode set · fixed and enumerated.** 24 monthly val
+spans (2024-05 .. 2026-04; 2026-05 has no val region in the snapshot,
+which ends 2026-05-03). Per span: 3 non-overlapping 1440-step episodes
+starting at span start + 0 h / + 24 h / + 48 h -> 72 episodes, shared
+across all seeds and all comparator policies. Span starts at 00:00 UTC of
+the first val day:
+
+| Month | First val day | Month | First val day |
+|---|---|---|---|
+| 2024-05 | 28 | 2025-05 | 28 |
+| 2024-06 | 27 | 2025-06 | 27 |
+| 2024-07 | 28 | 2025-07 | 28 |
+| 2024-08 | 28 | 2025-08 | 28 |
+| 2024-09 | 27 | 2025-09 | 27 |
+| 2024-10 | 28 | 2025-10 | 28 |
+| 2024-11 | 27 | 2025-11 | 27 |
+| 2024-12 | 28 | 2025-12 | 28 |
+| 2025-01 | 28 | 2026-01 | 28 |
+| 2025-02 | 25 | 2026-02 | 25 |
+| 2025-03 | 28 | 2026-03 | 28 |
+| 2025-04 | 27 | 2026-04 | 27 |
+
+(31-day months -> day 28; 30-day -> 27; 28-day February -> 25; identical
+to the datamodule rule. Each evaluation span uses bars from span start
+through +4320 minutes inclusive · all inside the val region; the
+remaining val day is an unused buffer.) All 24 spans were verified
+contiguous against the snapshot on 2026-06-10 (4,321 bars each, exact
+1-min spacing). The materialized 72-episode list (timestamps + kline row
+indices) is generated deterministically from this rule and frozen as
+`artifacts/adr007/eval_episodes.json` BEFORE the first full training
+run, with its SHA-256 recorded in `artifacts/adr007/run_log.md` at
+freeze time; the harness refuses to run against a hash-mismatching
+artifact, and the gate may only be evaluated against that artifact.
+Regeneration happens exactly once, at gate time, against the same frozen
+snapshot: ANY mismatch with the frozen artifact · including a newly
+detected gap in a span verified contiguous on 2026-06-10 · is an
+integrity anomaly and a HALT for operator review. No agent-side month
+exclusion exists; an exclusion is valid only as an operator amendment
+recorded BEFORE the gate read, with thresholds unchanged (NOT rescaled)
+and all metric definitions in (D)-(F) ranging over the surviving
+enumerated set.
+
+**(C) Policies under evaluation.**
+
+- **Agent** · the final PPO checkpoint of each training seed, evaluated
+  deterministically: action = argmax over policy logits, exact logit
+  ties resolving to the lowest action index. Eval seed 42 seeds all
+  framework RNGs as belt-and-braces · with enumerated starts and argmax
+  actions no rollout stochasticity should remain, and (G)(vii) asserts
+  bitwise repeatability (evaluation may run on CPU to guarantee it).
+  Episodes run in enumerated order; each episode resets to initial cash
+  10,000; any policy-internal recurrent/hidden state is re-initialized
+  at every episode reset · the per-step information set is exactly the
+  env observation (window + portfolio), never cross-episode memory.
+- **Buy-and-hold comparator** · per disjoint val span, ONE 4320-step env
+  episode with constant action 4 (100%): enters at span start (paying
+  taker fee + slippage on the full notional), holds, marks to market at
+  span end. Defined per-span · NOT per-episode · so entry costs are paid
+  once per span, then aggregated. Its per-interval returns follow the
+  exact formula in (D) -> 72 interval returns on the identical time base
+  as the agent. (Constant action 4 implies negligible fee-dust
+  rebalances after entry through the env's own mechanics · accepted; B&H
+  runs through the SAME env and harness as every other policy.)
+  Integrity precondition (mirror of flat's): per span, the harness B&H
+  cumulative net log-return must match the closed-form kline value
+  `ln((10000 x close_end / (close_start x 1.0002) - 10) / 10000)` ·
+  entry at the span-start close paying the 0.1% taker fee (10.0 on the
+  10,000 notional) and 2 bps slippage, mark at the span-end close ·
+  within `|diff| <= 1e-4` (post-entry fee-dust rebalances are bounded
+  well below this). Known-and-accepted asymmetry: if a span ever
+  breached the 50% guardrail, B&H would stop out and carry forward while
+  agent episodes reset daily · academic on this snapshot (no 72 h window
+  approaches -50%).
+- **Flat comparator** · constant action 0 over the 72 episodes. By
+  construction it never trades. Harness integrity precondition, scoped
+  precisely: flat's cumulative net log-return == 0.0 exactly AND flat's
+  total realized turnover == 0.0 exactly. Flat's Sharpe is undefined by
+  construction (zero variance); the harness reports it as null, and it
+  is exempt from this precondition and from every criterion. Any
+  violation of the scoped precondition means the harness is broken and
+  must be fixed before any gate read (integrity precondition, not a
+  gate).
+- **Random reference** · uniform over the 5 actions, dedicated RNG seed
+  7, same 72 episodes. Sanity reference ONLY · reported in full,
+  participates in no gate criterion.
+
+**(D) Metrics.** All returns are net of fees and slippage as embodied in
+env equity. The 0.05 x turnover term is reward shaping · not a cash
+flow · and is EXCLUDED from evaluation metrics (it remains in the
+training reward unchanged).
+
+- Per-episode net log-return · `r_i = ln(equity_end_i / 10000)` for
+  agent/flat/random (each episode starts fresh; an early-terminated
+  episode contributes its at-termination value). For B&H: per span `k`
+  let `E_k(t)`, `t = 0..4320`, be its equity curve with
+  `E_k(0) := 10000` (initial cash, BEFORE the entry trade · the harness
+  prepends it; `StepInfo.equity` starts post-entry) and, after any early
+  termination, `E_k(t)` carried forward flat to span end. The three
+  interval returns per span are
+  `r = ln(E_k(j x 1440) / E_k((j - 1) x 1440))`, `j = 1..3` -> 72
+  interval returns. They telescope by construction: each span's three
+  returns sum to `ln(E_k(4320) / 10000)`, the span's cumulative net
+  log-return, entry cost included, also under carry-forward. `R_BH` has
+  exactly ONE definition · the sum of the 72 interval returns; any
+  per-span phrasing elsewhere in this ADR is this same number via the
+  telescoping identity, never a second definition.
+- Early termination (operator amendment A1 · 2026-06-10) · if ANY eval
+  episode · agent, B&H, flat, random · terminates on the equity < 50%
+  guardrail, the episode counts as COMPLETE with return
+  `ln(E_terminal / E_start)`; B&H's span mark uses terminal equity if
+  its 4320-step episode terminates early (the carry-forward rule above
+  implements exactly this). Same env semantics for every policy · no
+  termination-disabled special cases.
+- Cumulative net log-return · `R = sum(r_i)` over the 72 episodes.
+- Sharpe · `S = mean(r_i) / std(r_i, ddof=1) * sqrt(365)` (daily
+  episodes, crypto trades 365 days, risk-free rate 0). The guard uses
+  the SAME estimator as the formula: if `std(r_i, ddof=1) < 1e-12`, S is
+  undefined and any criterion referencing it FAILs.
+- Realized turnover · per-episode sum of per-step turnover (fraction of
+  equity, the env's own definition); report mean/median/max across the 72
+  episodes; `TO = total turnover summed over all 72 episodes`.
+- Max drawdown · report-only, per episode and worst-of-set. Not a gate.
+- Artifact authority and precision · the JSON artifact is the SOLE input
+  to classification; the markdown artifact is display-only. All floats
+  are serialized at full float64 round-trip precision (17 significant
+  digits). The Phase-3 classifier recomputes every derived expression in
+  G-BL1..G-BL4 (`R - 0.0002 x TO`, `max(S_BH, 0.0)`, the means) in
+  float64 from the stored primitives (per-episode `r_i`, per-episode
+  turnover, the 72 B&H interval returns) · it never compares against
+  pre-rounded display values.
+
+**(E) Seeds and aggregation rule.** Training seeds: **42, 0, 123** (the
+project's standing seed triple). All metrics are computed and reported
+for every seed. The DESIGNATED MEDIAN SEED is the seed whose cumulative
+net log-return R is the middle value of the three (if two or more seeds
+share the middle value, the numerically lowest seed number AMONG THE
+TIED SEEDS is designated). EVERY gate criterion is evaluated on the
+designated median seed only; the other seeds' numbers are reported as
+dispersion evidence. A seed that fails to produce its final
+step-2,000,000 checkpoint (crash, NaN divergence, power loss) is a
+HALT: the gate cannot be read, no substitute seed and no
+earlier-checkpoint evaluation is permitted, and the path forward is an
+operator amendment recorded before any relaunch.
+
+**(F) Criteria** (designated median seed; each independently binary):
+
+- **G-BL1 · slippage-stressed absolute profitability (vs flat).**
+  `R - 0.0002 x TO >= 0.010`. Rationale: flat is exactly 0; +0.010 over
+  72 evaluated days (~5% annualized) is the minimum economically nonzero
+  bar; the `0.0002 x TO` term re-prices every unit of realized turnover
+  under a doubled slippage assumption (the v1 linear 2 bps slippage model
+  is uncalibrated), so profits must survive a 2x slippage stress and
+  overtrading RAISES the bar an agent must clear.
+- **G-BL2 · return parity with passive.** `R >= R_BH`, where `R_BH` is
+  the sum of buy-and-hold's 72 interval returns per (D) (equivalently,
+  by the telescoping identity, the sum of the 24 per-span cumulative net
+  log-returns). Equality passes (measure-zero at float64).
+- **G-BL3 · risk-adjusted parity.** `S >= max(S_BH, 0.0)`, with S and
+  S_BH per (D) on the identical 72-interval time base. Undefined S ->
+  FAIL.
+- **G-BL4 · turnover cap (overtrading guard + live-feasibility).** Mean
+  per-episode realized turnover `<= 2.0` (at most two full portfolio
+  flips per evaluated day on average) AND per-episode realized turnover
+  `<= 10.0` for EVERY episode (concentration guard: a mean-only cap
+  would allow one ~144-turnover episode amid 71 quiet ones · exactly the
+  slippage-model-dominance the cap exists to prevent). One binary
+  criterion: both conditions must hold.
+
+**(G) Apples-to-apples preconditions (Track B · must pass before any
+full run; failures block, they do not reinterpret).** An assertion
+script verifies mechanically:
+
+- (i) the partition rule in the eval-episode artifact reproduces
+  `training/datamodule.py:396` month-by-month, and each of the 72 starts
+  equals its span start + exactly {0, 24, 48} h for the 24 span starts
+  derived from that rule (cross-checked against the table in (B);
+  72 = 24 x 3 exactly);
+- (ii) feature-pipeline identity · eval observations come from
+  `envs.spot_btc.compute_feature_block` itself (single source of truth)
+  with unchanged `FEATURE_NAMES` order, shapes (256, 12) + (3,), dtypes
+  float32, and sanitization per the code's ACTUAL contract · NaN -> 0.0
+  and +/-Inf -> +/-10.0 via `np.nan_to_num`; finite values are NOT
+  clipped by the code, so the bounds check is empirical: assert no
+  NaN/Inf and all eval-span observation values within the declared Box
+  bounds [-10, 10] (max |x| ~ 7.6 over the full snapshot, measured
+  2026-06-10);
+- (iii) every enumerated episode lies wholly inside the val partition
+  with >= 256 bars of history;
+- (iv) the flat-policy and B&H integrity preconditions of (C);
+- (v) training-partition purity · pre-run, draw >= 10,000 starts from
+  the actual training sampler as configured and assert every
+  [s, s + 1440] is train-pure under the (A) rule with s >= 256;
+  post-run, re-verify the realized start logs
+  (`artifacts/adr007/train_starts_seed<NN>.json`) the same way as a
+  gate precondition;
+- (vi) data-source identity · the env instantiated by the harness
+  reports exactly 1,051,201 rows with MIN(ts) = 2024-05-03 03:00 and
+  MAX(ts) = 2026-05-03 03:00 UTC, and the kline timestamp at every
+  eval-episode row index equals the timestamp stored in the frozen
+  artifact;
+- (vii) rollout determinism · two consecutive harness invocations on the
+  same checkpoint produce bitwise-identical artifact primitives.
+
+The world-model's step-log window indices are NOT asserted · ruled out
+by the operator (2026-06-10) as a supervised-eval concept that does not
+transfer to env rollouts.
+
+**(H) Verdict.** `PASS = G-BL1 AND G-BL2 AND G-BL3 AND G-BL4` on the
+designated median seed. Every criterion is reported beside its
+pre-registered threshold and its measured value in the findings doc
+(`docs/findings/2026-06-XX-adr007-model-free-baseline-results.md`).
+Either verdict is informative: PASS establishes extractable model-free
+edge net of costs and a live reference for any future paradigm; FAIL ·
+combined with the ADR-006 result · is evidence that this
+data/feature/cost setup lacks extractable edge for BOTH paradigms tried,
+and the next fork (richer features, different costs, option (d), or
+stop) is the operator's call, made outside this ADR.
+
+---
+
 ## Cold-Start Checklist
 
 If you are returning to this codebase after a break, follow these steps in order.
@@ -441,7 +872,7 @@ If you are returning to this codebase after a break, follow these steps in order
 2. Read the latest implementation doc in `docs/implementations/` to understand what changed most recently and where the project stands in the phase sequence.
 3. Run `pytest tests/ -x -q --ignore=tests/test_dream_endpoint.py` to verify the codebase compiles and existing tests pass.
 4. Open `configs/world_model.yaml` and scan current hyperparameters, especially `max_steps`, `mode`, and any `forward_*` parameters added by the pivot.
-5. Check the project's W&B dashboard (`crypto-dreamer` project) for the latest diagnostic run. Compare `kl_unclipped` against the 32-nat gate threshold.
+5. Read gates from on-disk checkpoints and eval artifacts, NEVER from W&B: `scripts/eval_gates.py --ckpt <path>` for the (historical) world-model gates, `scripts/eval_baseline_gates.py` + `artifacts/adr007/` for the ADR-007 baseline gate. W&B silently desynced on two consecutive runs; its only trusted role is the heartbeat "did it finish" signal (`logs/heartbeat_*.log`).
 6. Verify that `checkpoints/encoder_mae_full_raw.pt` exists. This is the pretrained encoder and cannot be regenerated without rerunning the MAE pretraining pipeline (~2 hours on the 4070).
 7. Review the ADRs in Section 12. Any ADR with status "revisit" or referencing a not-yet-written future ADR number is a pending decision that may need your attention before the next training run.
 8. If the dashboard's `DreamPlayer` panel shows feature-reconstruction visuals (15-dim feature time series), that visualization is stale · it predates the Phase 5.4 pivot and will be replaced with forward-distribution fan charts as part of Phase 5.5. Do not interpret current dashboard rollouts as model behavior until the dashboard work lands.

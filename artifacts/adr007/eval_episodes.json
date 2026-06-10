@@ -1,0 +1,761 @@
+{
+  "schema": "adr007-eval-episodes-v1",
+  "rule": "val iff (day_of_month - 1) / days_in_month >= 0.85 (UTC); span start 00:00 UTC of first val day; 3 episodes per span at +0/+24/+48 h; 1440 steps each; ADR-007 Section (B)",
+  "snapshot": {
+    "path": "data/market_ro.duckdb",
+    "rows": 1051201,
+    "min_ts": "2024-05-03T03:00:00+00:00",
+    "max_ts": "2026-05-03T03:00:00+00:00"
+  },
+  "episode_steps": 1440,
+  "bh_span_steps": 4320,
+  "smoke_episode_index": 0,
+  "spans": [
+    {
+      "month": "2024-05",
+      "first_val_day": 28,
+      "span_start_ts": "2024-05-28T00:00:00+00:00",
+      "span_start_row": 35820,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2024-06",
+      "first_val_day": 27,
+      "span_start_ts": "2024-06-27T00:00:00+00:00",
+      "span_start_row": 79020,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2024-07",
+      "first_val_day": 28,
+      "span_start_ts": "2024-07-28T00:00:00+00:00",
+      "span_start_row": 123660,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2024-08",
+      "first_val_day": 28,
+      "span_start_ts": "2024-08-28T00:00:00+00:00",
+      "span_start_row": 168300,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2024-09",
+      "first_val_day": 27,
+      "span_start_ts": "2024-09-27T00:00:00+00:00",
+      "span_start_row": 211500,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2024-10",
+      "first_val_day": 28,
+      "span_start_ts": "2024-10-28T00:00:00+00:00",
+      "span_start_row": 256140,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2024-11",
+      "first_val_day": 27,
+      "span_start_ts": "2024-11-27T00:00:00+00:00",
+      "span_start_row": 299340,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2024-12",
+      "first_val_day": 28,
+      "span_start_ts": "2024-12-28T00:00:00+00:00",
+      "span_start_row": 343980,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-01",
+      "first_val_day": 28,
+      "span_start_ts": "2025-01-28T00:00:00+00:00",
+      "span_start_row": 388620,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-02",
+      "first_val_day": 25,
+      "span_start_ts": "2025-02-25T00:00:00+00:00",
+      "span_start_row": 428940,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-03",
+      "first_val_day": 28,
+      "span_start_ts": "2025-03-28T00:00:00+00:00",
+      "span_start_row": 473580,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-04",
+      "first_val_day": 27,
+      "span_start_ts": "2025-04-27T00:00:00+00:00",
+      "span_start_row": 516780,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-05",
+      "first_val_day": 28,
+      "span_start_ts": "2025-05-28T00:00:00+00:00",
+      "span_start_row": 561420,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-06",
+      "first_val_day": 27,
+      "span_start_ts": "2025-06-27T00:00:00+00:00",
+      "span_start_row": 604620,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-07",
+      "first_val_day": 28,
+      "span_start_ts": "2025-07-28T00:00:00+00:00",
+      "span_start_row": 649260,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-08",
+      "first_val_day": 28,
+      "span_start_ts": "2025-08-28T00:00:00+00:00",
+      "span_start_row": 693900,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-09",
+      "first_val_day": 27,
+      "span_start_ts": "2025-09-27T00:00:00+00:00",
+      "span_start_row": 737100,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-10",
+      "first_val_day": 28,
+      "span_start_ts": "2025-10-28T00:00:00+00:00",
+      "span_start_row": 781740,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-11",
+      "first_val_day": 27,
+      "span_start_ts": "2025-11-27T00:00:00+00:00",
+      "span_start_row": 824940,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2025-12",
+      "first_val_day": 28,
+      "span_start_ts": "2025-12-28T00:00:00+00:00",
+      "span_start_row": 869580,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2026-01",
+      "first_val_day": 28,
+      "span_start_ts": "2026-01-28T00:00:00+00:00",
+      "span_start_row": 914220,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2026-02",
+      "first_val_day": 25,
+      "span_start_ts": "2026-02-25T00:00:00+00:00",
+      "span_start_row": 954540,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2026-03",
+      "first_val_day": 28,
+      "span_start_ts": "2026-03-28T00:00:00+00:00",
+      "span_start_row": 999180,
+      "span_bars_inclusive": 4321
+    },
+    {
+      "month": "2026-04",
+      "first_val_day": 27,
+      "span_start_ts": "2026-04-27T00:00:00+00:00",
+      "span_start_row": 1042380,
+      "span_bars_inclusive": 4321
+    }
+  ],
+  "episodes": [
+    {
+      "index": 0,
+      "month": "2024-05",
+      "offset_hours": 0,
+      "start_ts": "2024-05-28T00:00:00+00:00",
+      "start_row": 35820,
+      "steps": 1440
+    },
+    {
+      "index": 1,
+      "month": "2024-05",
+      "offset_hours": 24,
+      "start_ts": "2024-05-29T00:00:00+00:00",
+      "start_row": 37260,
+      "steps": 1440
+    },
+    {
+      "index": 2,
+      "month": "2024-05",
+      "offset_hours": 48,
+      "start_ts": "2024-05-30T00:00:00+00:00",
+      "start_row": 38700,
+      "steps": 1440
+    },
+    {
+      "index": 3,
+      "month": "2024-06",
+      "offset_hours": 0,
+      "start_ts": "2024-06-27T00:00:00+00:00",
+      "start_row": 79020,
+      "steps": 1440
+    },
+    {
+      "index": 4,
+      "month": "2024-06",
+      "offset_hours": 24,
+      "start_ts": "2024-06-28T00:00:00+00:00",
+      "start_row": 80460,
+      "steps": 1440
+    },
+    {
+      "index": 5,
+      "month": "2024-06",
+      "offset_hours": 48,
+      "start_ts": "2024-06-29T00:00:00+00:00",
+      "start_row": 81900,
+      "steps": 1440
+    },
+    {
+      "index": 6,
+      "month": "2024-07",
+      "offset_hours": 0,
+      "start_ts": "2024-07-28T00:00:00+00:00",
+      "start_row": 123660,
+      "steps": 1440
+    },
+    {
+      "index": 7,
+      "month": "2024-07",
+      "offset_hours": 24,
+      "start_ts": "2024-07-29T00:00:00+00:00",
+      "start_row": 125100,
+      "steps": 1440
+    },
+    {
+      "index": 8,
+      "month": "2024-07",
+      "offset_hours": 48,
+      "start_ts": "2024-07-30T00:00:00+00:00",
+      "start_row": 126540,
+      "steps": 1440
+    },
+    {
+      "index": 9,
+      "month": "2024-08",
+      "offset_hours": 0,
+      "start_ts": "2024-08-28T00:00:00+00:00",
+      "start_row": 168300,
+      "steps": 1440
+    },
+    {
+      "index": 10,
+      "month": "2024-08",
+      "offset_hours": 24,
+      "start_ts": "2024-08-29T00:00:00+00:00",
+      "start_row": 169740,
+      "steps": 1440
+    },
+    {
+      "index": 11,
+      "month": "2024-08",
+      "offset_hours": 48,
+      "start_ts": "2024-08-30T00:00:00+00:00",
+      "start_row": 171180,
+      "steps": 1440
+    },
+    {
+      "index": 12,
+      "month": "2024-09",
+      "offset_hours": 0,
+      "start_ts": "2024-09-27T00:00:00+00:00",
+      "start_row": 211500,
+      "steps": 1440
+    },
+    {
+      "index": 13,
+      "month": "2024-09",
+      "offset_hours": 24,
+      "start_ts": "2024-09-28T00:00:00+00:00",
+      "start_row": 212940,
+      "steps": 1440
+    },
+    {
+      "index": 14,
+      "month": "2024-09",
+      "offset_hours": 48,
+      "start_ts": "2024-09-29T00:00:00+00:00",
+      "start_row": 214380,
+      "steps": 1440
+    },
+    {
+      "index": 15,
+      "month": "2024-10",
+      "offset_hours": 0,
+      "start_ts": "2024-10-28T00:00:00+00:00",
+      "start_row": 256140,
+      "steps": 1440
+    },
+    {
+      "index": 16,
+      "month": "2024-10",
+      "offset_hours": 24,
+      "start_ts": "2024-10-29T00:00:00+00:00",
+      "start_row": 257580,
+      "steps": 1440
+    },
+    {
+      "index": 17,
+      "month": "2024-10",
+      "offset_hours": 48,
+      "start_ts": "2024-10-30T00:00:00+00:00",
+      "start_row": 259020,
+      "steps": 1440
+    },
+    {
+      "index": 18,
+      "month": "2024-11",
+      "offset_hours": 0,
+      "start_ts": "2024-11-27T00:00:00+00:00",
+      "start_row": 299340,
+      "steps": 1440
+    },
+    {
+      "index": 19,
+      "month": "2024-11",
+      "offset_hours": 24,
+      "start_ts": "2024-11-28T00:00:00+00:00",
+      "start_row": 300780,
+      "steps": 1440
+    },
+    {
+      "index": 20,
+      "month": "2024-11",
+      "offset_hours": 48,
+      "start_ts": "2024-11-29T00:00:00+00:00",
+      "start_row": 302220,
+      "steps": 1440
+    },
+    {
+      "index": 21,
+      "month": "2024-12",
+      "offset_hours": 0,
+      "start_ts": "2024-12-28T00:00:00+00:00",
+      "start_row": 343980,
+      "steps": 1440
+    },
+    {
+      "index": 22,
+      "month": "2024-12",
+      "offset_hours": 24,
+      "start_ts": "2024-12-29T00:00:00+00:00",
+      "start_row": 345420,
+      "steps": 1440
+    },
+    {
+      "index": 23,
+      "month": "2024-12",
+      "offset_hours": 48,
+      "start_ts": "2024-12-30T00:00:00+00:00",
+      "start_row": 346860,
+      "steps": 1440
+    },
+    {
+      "index": 24,
+      "month": "2025-01",
+      "offset_hours": 0,
+      "start_ts": "2025-01-28T00:00:00+00:00",
+      "start_row": 388620,
+      "steps": 1440
+    },
+    {
+      "index": 25,
+      "month": "2025-01",
+      "offset_hours": 24,
+      "start_ts": "2025-01-29T00:00:00+00:00",
+      "start_row": 390060,
+      "steps": 1440
+    },
+    {
+      "index": 26,
+      "month": "2025-01",
+      "offset_hours": 48,
+      "start_ts": "2025-01-30T00:00:00+00:00",
+      "start_row": 391500,
+      "steps": 1440
+    },
+    {
+      "index": 27,
+      "month": "2025-02",
+      "offset_hours": 0,
+      "start_ts": "2025-02-25T00:00:00+00:00",
+      "start_row": 428940,
+      "steps": 1440
+    },
+    {
+      "index": 28,
+      "month": "2025-02",
+      "offset_hours": 24,
+      "start_ts": "2025-02-26T00:00:00+00:00",
+      "start_row": 430380,
+      "steps": 1440
+    },
+    {
+      "index": 29,
+      "month": "2025-02",
+      "offset_hours": 48,
+      "start_ts": "2025-02-27T00:00:00+00:00",
+      "start_row": 431820,
+      "steps": 1440
+    },
+    {
+      "index": 30,
+      "month": "2025-03",
+      "offset_hours": 0,
+      "start_ts": "2025-03-28T00:00:00+00:00",
+      "start_row": 473580,
+      "steps": 1440
+    },
+    {
+      "index": 31,
+      "month": "2025-03",
+      "offset_hours": 24,
+      "start_ts": "2025-03-29T00:00:00+00:00",
+      "start_row": 475020,
+      "steps": 1440
+    },
+    {
+      "index": 32,
+      "month": "2025-03",
+      "offset_hours": 48,
+      "start_ts": "2025-03-30T00:00:00+00:00",
+      "start_row": 476460,
+      "steps": 1440
+    },
+    {
+      "index": 33,
+      "month": "2025-04",
+      "offset_hours": 0,
+      "start_ts": "2025-04-27T00:00:00+00:00",
+      "start_row": 516780,
+      "steps": 1440
+    },
+    {
+      "index": 34,
+      "month": "2025-04",
+      "offset_hours": 24,
+      "start_ts": "2025-04-28T00:00:00+00:00",
+      "start_row": 518220,
+      "steps": 1440
+    },
+    {
+      "index": 35,
+      "month": "2025-04",
+      "offset_hours": 48,
+      "start_ts": "2025-04-29T00:00:00+00:00",
+      "start_row": 519660,
+      "steps": 1440
+    },
+    {
+      "index": 36,
+      "month": "2025-05",
+      "offset_hours": 0,
+      "start_ts": "2025-05-28T00:00:00+00:00",
+      "start_row": 561420,
+      "steps": 1440
+    },
+    {
+      "index": 37,
+      "month": "2025-05",
+      "offset_hours": 24,
+      "start_ts": "2025-05-29T00:00:00+00:00",
+      "start_row": 562860,
+      "steps": 1440
+    },
+    {
+      "index": 38,
+      "month": "2025-05",
+      "offset_hours": 48,
+      "start_ts": "2025-05-30T00:00:00+00:00",
+      "start_row": 564300,
+      "steps": 1440
+    },
+    {
+      "index": 39,
+      "month": "2025-06",
+      "offset_hours": 0,
+      "start_ts": "2025-06-27T00:00:00+00:00",
+      "start_row": 604620,
+      "steps": 1440
+    },
+    {
+      "index": 40,
+      "month": "2025-06",
+      "offset_hours": 24,
+      "start_ts": "2025-06-28T00:00:00+00:00",
+      "start_row": 606060,
+      "steps": 1440
+    },
+    {
+      "index": 41,
+      "month": "2025-06",
+      "offset_hours": 48,
+      "start_ts": "2025-06-29T00:00:00+00:00",
+      "start_row": 607500,
+      "steps": 1440
+    },
+    {
+      "index": 42,
+      "month": "2025-07",
+      "offset_hours": 0,
+      "start_ts": "2025-07-28T00:00:00+00:00",
+      "start_row": 649260,
+      "steps": 1440
+    },
+    {
+      "index": 43,
+      "month": "2025-07",
+      "offset_hours": 24,
+      "start_ts": "2025-07-29T00:00:00+00:00",
+      "start_row": 650700,
+      "steps": 1440
+    },
+    {
+      "index": 44,
+      "month": "2025-07",
+      "offset_hours": 48,
+      "start_ts": "2025-07-30T00:00:00+00:00",
+      "start_row": 652140,
+      "steps": 1440
+    },
+    {
+      "index": 45,
+      "month": "2025-08",
+      "offset_hours": 0,
+      "start_ts": "2025-08-28T00:00:00+00:00",
+      "start_row": 693900,
+      "steps": 1440
+    },
+    {
+      "index": 46,
+      "month": "2025-08",
+      "offset_hours": 24,
+      "start_ts": "2025-08-29T00:00:00+00:00",
+      "start_row": 695340,
+      "steps": 1440
+    },
+    {
+      "index": 47,
+      "month": "2025-08",
+      "offset_hours": 48,
+      "start_ts": "2025-08-30T00:00:00+00:00",
+      "start_row": 696780,
+      "steps": 1440
+    },
+    {
+      "index": 48,
+      "month": "2025-09",
+      "offset_hours": 0,
+      "start_ts": "2025-09-27T00:00:00+00:00",
+      "start_row": 737100,
+      "steps": 1440
+    },
+    {
+      "index": 49,
+      "month": "2025-09",
+      "offset_hours": 24,
+      "start_ts": "2025-09-28T00:00:00+00:00",
+      "start_row": 738540,
+      "steps": 1440
+    },
+    {
+      "index": 50,
+      "month": "2025-09",
+      "offset_hours": 48,
+      "start_ts": "2025-09-29T00:00:00+00:00",
+      "start_row": 739980,
+      "steps": 1440
+    },
+    {
+      "index": 51,
+      "month": "2025-10",
+      "offset_hours": 0,
+      "start_ts": "2025-10-28T00:00:00+00:00",
+      "start_row": 781740,
+      "steps": 1440
+    },
+    {
+      "index": 52,
+      "month": "2025-10",
+      "offset_hours": 24,
+      "start_ts": "2025-10-29T00:00:00+00:00",
+      "start_row": 783180,
+      "steps": 1440
+    },
+    {
+      "index": 53,
+      "month": "2025-10",
+      "offset_hours": 48,
+      "start_ts": "2025-10-30T00:00:00+00:00",
+      "start_row": 784620,
+      "steps": 1440
+    },
+    {
+      "index": 54,
+      "month": "2025-11",
+      "offset_hours": 0,
+      "start_ts": "2025-11-27T00:00:00+00:00",
+      "start_row": 824940,
+      "steps": 1440
+    },
+    {
+      "index": 55,
+      "month": "2025-11",
+      "offset_hours": 24,
+      "start_ts": "2025-11-28T00:00:00+00:00",
+      "start_row": 826380,
+      "steps": 1440
+    },
+    {
+      "index": 56,
+      "month": "2025-11",
+      "offset_hours": 48,
+      "start_ts": "2025-11-29T00:00:00+00:00",
+      "start_row": 827820,
+      "steps": 1440
+    },
+    {
+      "index": 57,
+      "month": "2025-12",
+      "offset_hours": 0,
+      "start_ts": "2025-12-28T00:00:00+00:00",
+      "start_row": 869580,
+      "steps": 1440
+    },
+    {
+      "index": 58,
+      "month": "2025-12",
+      "offset_hours": 24,
+      "start_ts": "2025-12-29T00:00:00+00:00",
+      "start_row": 871020,
+      "steps": 1440
+    },
+    {
+      "index": 59,
+      "month": "2025-12",
+      "offset_hours": 48,
+      "start_ts": "2025-12-30T00:00:00+00:00",
+      "start_row": 872460,
+      "steps": 1440
+    },
+    {
+      "index": 60,
+      "month": "2026-01",
+      "offset_hours": 0,
+      "start_ts": "2026-01-28T00:00:00+00:00",
+      "start_row": 914220,
+      "steps": 1440
+    },
+    {
+      "index": 61,
+      "month": "2026-01",
+      "offset_hours": 24,
+      "start_ts": "2026-01-29T00:00:00+00:00",
+      "start_row": 915660,
+      "steps": 1440
+    },
+    {
+      "index": 62,
+      "month": "2026-01",
+      "offset_hours": 48,
+      "start_ts": "2026-01-30T00:00:00+00:00",
+      "start_row": 917100,
+      "steps": 1440
+    },
+    {
+      "index": 63,
+      "month": "2026-02",
+      "offset_hours": 0,
+      "start_ts": "2026-02-25T00:00:00+00:00",
+      "start_row": 954540,
+      "steps": 1440
+    },
+    {
+      "index": 64,
+      "month": "2026-02",
+      "offset_hours": 24,
+      "start_ts": "2026-02-26T00:00:00+00:00",
+      "start_row": 955980,
+      "steps": 1440
+    },
+    {
+      "index": 65,
+      "month": "2026-02",
+      "offset_hours": 48,
+      "start_ts": "2026-02-27T00:00:00+00:00",
+      "start_row": 957420,
+      "steps": 1440
+    },
+    {
+      "index": 66,
+      "month": "2026-03",
+      "offset_hours": 0,
+      "start_ts": "2026-03-28T00:00:00+00:00",
+      "start_row": 999180,
+      "steps": 1440
+    },
+    {
+      "index": 67,
+      "month": "2026-03",
+      "offset_hours": 24,
+      "start_ts": "2026-03-29T00:00:00+00:00",
+      "start_row": 1000620,
+      "steps": 1440
+    },
+    {
+      "index": 68,
+      "month": "2026-03",
+      "offset_hours": 48,
+      "start_ts": "2026-03-30T00:00:00+00:00",
+      "start_row": 1002060,
+      "steps": 1440
+    },
+    {
+      "index": 69,
+      "month": "2026-04",
+      "offset_hours": 0,
+      "start_ts": "2026-04-27T00:00:00+00:00",
+      "start_row": 1042380,
+      "steps": 1440
+    },
+    {
+      "index": 70,
+      "month": "2026-04",
+      "offset_hours": 24,
+      "start_ts": "2026-04-28T00:00:00+00:00",
+      "start_row": 1043820,
+      "steps": 1440
+    },
+    {
+      "index": 71,
+      "month": "2026-04",
+      "offset_hours": 48,
+      "start_ts": "2026-04-29T00:00:00+00:00",
+      "start_row": 1045260,
+      "steps": 1440
+    }
+  ]
+}

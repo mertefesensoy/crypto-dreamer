@@ -1,0 +1,46 @@
+# ADR-007 model-free PPO baseline - frozen hyperparameters (Track A).
+#
+# The SHA-256 of this file is recorded in artifacts/adr007/run_log.md before
+# the run-of-record launch; any change after that freeze requires an operator
+# amendment recorded BEFORE relaunch (ADR-007, training-budget section).
+#
+# Rollout-segment length note (ADR-007 T=48 ruling): rollout_steps is a free
+# PPO hyperparameter, recorded here per the proposed ruling that the world
+# model's T=48 BPTT length does not transfer to on-policy rollouts.
+
+seed: 42                      # CLI-overridable via --seed N
+
+total_env_steps: 2_000_000    # pre-registered budget per seed (anti-gaming)
+n_envs: 16
+rollout_steps: 125            # 16 * 125 = 2000 steps/update -> exactly 1000 updates
+epochs: 4
+minibatches: 4
+gamma: 0.99
+gae_lambda: 0.95
+clip: 0.2
+ent_coef: 0.01
+vf_coef: 0.5
+lr: 3.0e-4
+max_grad_norm: 0.5
+device: cuda
+episode_steps: 1440
+
+model:
+  n_actions: 5
+  hidden: 256
+
+checkpoint_every_env_steps: 250_000
+heartbeat_every_updates: 10
+
+out:
+  checkpoints_dir: checkpoints
+  logs_dir: logs
+  artifacts_dir: artifacts/adr007
+
+wandb:
+  enabled: true
+  project: crypto-dreamer
+  run_name: ppo-baseline-seed{seed}
+  # ADR-007: 'offline' is set EXPLICITLY here (not inherited); train_ppo.py
+  # raises if this is anything but the literal string 'offline'.
+  mode: offline

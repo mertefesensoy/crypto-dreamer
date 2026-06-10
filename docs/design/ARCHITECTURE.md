@@ -447,11 +447,14 @@ only the prior is touched).
 
 ### ADR-007 · Model-free PPO baseline · world-model paradigm dropped (option c)
 
-**Status:** Proposed · 2026-06-10. The operator flips this to Accepted on
-commit. The pre-registered evaluation gate below becomes binding at that
-moment; thresholds are not adjusted afterward. Any ambiguity discovered
-later is resolved by an operator ruling recorded here as an amendment
-BEFORE the gate is read · never after.
+**Status:** Accepted · 2026-06-10 · committed `0afe37b` with operator
+amendments A1/A2 folded in pre-acceptance; Phase-2 GO declared by the
+operator 2026-06-10. The pre-registered evaluation gate below is BINDING;
+thresholds are not adjusted. Any ambiguity discovered later is resolved
+by an operator ruling recorded here as an amendment BEFORE the gate is
+read · never after. (Status line flipped Proposed -> Accepted by the
+implementation agent at Phase-2 GO per the operator's declaration · the
+commit itself predates the flip; review at next commit.)
 
 **Context.** The ADR-006 linear-prior disambiguation experiment ran to
 completion and was committed in `a3941d3` (2026-05-31; results in

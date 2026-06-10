@@ -1,0 +1,57 @@
+{
+  "schema": "adr007-eval-v1",
+  "policy": "agent",
+  "subset": "smoke",
+  "purpose": "smoke-determinism-recheck",
+  "episodes_sha256": "1842d800900b871733414e6d71e068f188e6ce8cc0de2a923035cab43d9811f1",
+  "ckpt_path": "C:\\Users\\senso\\OneDrive\\Masa\u00fcst\u00fc\\crypto-dreamer\\checkpoints\\ppo_baseline_seed42_step20000.ckpt",
+  "ckpt_sha256": "7ca928c133ce75df3ee67fd9fee640e8bd4baf713eedab4cb16b493235d7d380",
+  "seed": 42,
+  "device": "cpu",
+  "generated_utc": "2026-06-10T21:07:29+00:00",
+  "primitives": {
+    "r_i_definition": "per-episode net log-return ln(E_end / 10000.0)",
+    "r_i": [
+      -0.016692369456567525
+    ],
+    "turnover_i": [
+      7.160571820492924
+    ],
+    "drawdown_i": [
+      0.0247544521297407
+    ],
+    "terminated": [
+      false
+    ],
+    "steps": [
+      1440
+    ],
+    "start_row": [
+      35820
+    ],
+    "start_ts": [
+      "2024-05-28T00:00:00+00:00"
+    ],
+    "episode_index": [
+      0
+    ]
+  },
+  "aggregates": {
+    "R": -0.016692369456567525,
+    "sharpe": null,
+    "TO": 7.160571820492924,
+    "turnover_mean": 7.160571820492924,
+    "turnover_median": 7.160571820492924,
+    "turnover_max": 7.160571820492924,
+    "max_drawdown_worst": 0.0247544521297407,
+    "n_returns": 1,
+    "n_rollouts": 1,
+    "n_terminated": 0
+  },
+  "integrity": {
+    "flat_ok": null,
+    "bh_ok": null,
+    "bh_spans": [],
+    "notes": "no integrity precondition applies to this policy"
+  }
+}

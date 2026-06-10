@@ -1,0 +1,57 @@
+{
+  "schema": "adr007-eval-v1",
+  "policy": "random",
+  "subset": "smoke",
+  "purpose": "smoke-selftest",
+  "episodes_sha256": "1842d800900b871733414e6d71e068f188e6ce8cc0de2a923035cab43d9811f1",
+  "ckpt_path": null,
+  "ckpt_sha256": null,
+  "seed": null,
+  "device": "cpu",
+  "generated_utc": "2026-06-10T21:01:24+00:00",
+  "primitives": {
+    "r_i_definition": "per-episode net log-return ln(E_end / 10000.0)",
+    "r_i": [
+      -0.687055603848776
+    ],
+    "turnover_i": [
+      557.2101063808026
+    ],
+    "drawdown_i": [
+      0.49694491595215295
+    ],
+    "terminated": [
+      false
+    ],
+    "steps": [
+      1440
+    ],
+    "start_row": [
+      35820
+    ],
+    "start_ts": [
+      "2024-05-28T00:00:00+00:00"
+    ],
+    "episode_index": [
+      0
+    ]
+  },
+  "aggregates": {
+    "R": -0.687055603848776,
+    "sharpe": null,
+    "TO": 557.2101063808026,
+    "turnover_mean": 557.2101063808026,
+    "turnover_median": 557.2101063808026,
+    "turnover_max": 557.2101063808026,
+    "max_drawdown_worst": 0.49694491595215295,
+    "n_returns": 1,
+    "n_rollouts": 1,
+    "n_terminated": 0
+  },
+  "integrity": {
+    "flat_ok": null,
+    "bh_ok": null,
+    "bh_spans": [],
+    "notes": "no integrity precondition applies to this policy"
+  }
+}

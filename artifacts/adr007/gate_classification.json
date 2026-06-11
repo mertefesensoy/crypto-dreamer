@@ -1,0 +1,112 @@
+{
+  "schema": "adr007-gate-classification-v1",
+  "classified_utc": "2026-06-11T07:04:12+00:00",
+  "episodes_sha256": "1842d800900b871733414e6d71e068f188e6ce8cc0de2a923035cab43d9811f1",
+  "agent_ckpt_sha256": {
+    "42": "68a9c65d44a7ab5d8f2f9ff590baec65af1292a38a0bdc6bd8680f24aba2a626",
+    "0": "891f999d00a63ca346419bf5bebd7f1654b9f6c5a127223a0d62ca98b6b38433",
+    "123": "d55aa775ce696b0bba0b2dee338ba7d4a2e55c69b0716dd6f384943bfcbe77ac"
+  },
+  "per_seed": {
+    "42": {
+      "n_episodes": 72,
+      "R": -0.1674535432734741,
+      "sharpe": -4.004367168608533,
+      "TO": 45.838696382173886,
+      "mean_episode_turnover": 0.6366485608635262,
+      "max_episode_turnover": 0.834089669425433,
+      "worst_drawdown": 0.04468751164160867
+    },
+    "0": {
+      "n_episodes": 72,
+      "R": -0.16919859808246518,
+      "sharpe": -4.03075885136514,
+      "TO": 46.83761509785614,
+      "mean_episode_turnover": 0.6505224319146685,
+      "max_episode_turnover": 1.3331014592296953,
+      "worst_drawdown": 0.045762158884814275
+    },
+    "123": {
+      "n_episodes": 72,
+      "R": -0.1674535432734741,
+      "sharpe": -4.004367168608533,
+      "TO": 45.838696382173886,
+      "mean_episode_turnover": 0.6366485608635262,
+      "max_episode_turnover": 0.834089669425433,
+      "worst_drawdown": 0.04468751164160867
+    }
+  },
+  "comparators": {
+    "bh": {
+      "n_episodes": 72,
+      "R": -0.2627548090021279,
+      "sharpe": -3.1480304464973776,
+      "TO": 24.024049463009693,
+      "mean_episode_turnover": 1.0010020609587371,
+      "max_episode_turnover": 1.0010029201410913,
+      "worst_drawdown": 0.12732172303557765
+    },
+    "flat": {
+      "n_episodes": 72,
+      "R": 0.0,
+      "sharpe": null,
+      "TO": 0.0,
+      "mean_episode_turnover": 0.0,
+      "max_episode_turnover": 0.0,
+      "worst_drawdown": 0.0
+    },
+    "random_report_only": {
+      "n_episodes": 72,
+      "R": -49.446761409460365,
+      "sharpe": -1168.5021621213928,
+      "TO": 41036.14517287506,
+      "mean_episode_turnover": 569.9464607343758,
+      "max_episode_turnover": 592.0038749101288,
+      "worst_drawdown": 0.5022950219521043
+    }
+  },
+  "median_designation": {
+    "seeds_sorted_by_R": [
+      0,
+      42,
+      123
+    ],
+    "middle_value": -0.1674535432734741,
+    "tied_at_middle": [
+      42,
+      123
+    ],
+    "designated_median_seed": 42
+  },
+  "criteria": {
+    "G-BL1": {
+      "definition": "R - 0.0002*TO >= 0.010",
+      "lhs": -0.17662128254990886,
+      "threshold": 0.01,
+      "pass": false
+    },
+    "G-BL2": {
+      "definition": "R >= R_BH",
+      "lhs": -0.1674535432734741,
+      "threshold": -0.2627548090021279,
+      "pass": true
+    },
+    "G-BL3": {
+      "definition": "S >= max(S_BH, 0.0); undefined S -> FAIL",
+      "lhs": -4.004367168608533,
+      "threshold": 0.0,
+      "pass": false
+    },
+    "G-BL4": {
+      "definition": "mean ep turnover <= 2.0 AND every ep <= 10.0",
+      "mean_episode_turnover": 0.6366485608635262,
+      "max_episode_turnover": 0.834089669425433,
+      "thresholds": [
+        2.0,
+        10.0
+      ],
+      "pass": true
+    }
+  },
+  "verdict": "FAIL"
+}

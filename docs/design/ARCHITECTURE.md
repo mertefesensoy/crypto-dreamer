@@ -716,7 +716,8 @@ enumerated set.
   entry at the span-start close paying the 0.1% taker fee (10.0 on the
   10,000 notional) and 2 bps slippage, mark at the span-end close ·
   within `|diff| <= 1e-4` (post-entry fee-dust rebalances are bounded
-  well below this). Known-and-accepted asymmetry: if a span ever
+  well below this). [Reference formula and tolerance SUPERSEDED by
+  amendment A3 below · the env-run B&H gate inputs are unchanged.] Known-and-accepted asymmetry: if a span ever
   breached the 50% guardrail, B&H would stop out and carry forward while
   agent episodes reset daily · academic on this snapshot (no 72 h window
   approaches -50%).
@@ -864,6 +865,40 @@ combined with the ADR-006 result · is evidence that this
 data/feature/cost setup lacks extractable edge for BOTH paradigms tried,
 and the next fork (richer features, different costs, option (d), or
 stop) is the operator's call, made outside this ADR.
+
+**Amendment A3 · 2026-06-11 · operator-ratified · B&H integrity
+reference corrected, tolerance tightened.** During the Phase-3 full-set
+integrity preconditions (before any gate read), the B&H closed-form
+check of (C) FAILED on exactly one of 24 spans · 2025-02: env cumulative
+-0.1197939 vs closed-form -0.1199181, |diff| = 1.2415e-4 > 1e-4; the
+other 23 spans passed. Verified root cause: the closed-form assumed a
+constant -10 cash balance with the full entry BTC position held, while
+the env's constant-action-4 path settles the fee deficit by selling
+~$10 of BTC at the SECOND bar of the span (the env's rebalance rule
+gives delta_value = cash exactly), so the reference mispriced the span's
+price move on that $10 exposure · divergence = ~1.001e-3 x span log
+move, and 2025-02 (-11.86%) was the only span beyond +/-10%. The env and
+harness are correct; the reference formula was wrong. Per the operator
+ruling (option (a) ratified; option (b) · tolerance re-budgeting ·
+REJECTED as spec-weakening): the corrected kline-only reference is, for
+span start row `s`,
+
+    btc_ref = 10000 / (close[s] x 1.0002) - 10 / (close[s+1] x 0.9998)
+    ref     = ln((btc_ref x close[s+4320] - 0.01) / 10000)
+
+(entry at the span-start close with the 10.0 taker fee and +2 bps
+slippage; the analytic second-bar dust-settlement sale of 10.0 notional
+at -2 bps slippage with its 0.01 fee leaving cash -0.01; the residual
+sub-cent dust cascade is bounded below ~6e-7 log and absorbed by the
+tolerance), and the tolerance is TIGHTENED from 1e-4 to **1e-5**. For
+the record: (i) the env-run B&H numbers are the gate inputs per
+amendment A1 and are UNCHANGED by this amendment · only the verification
+reference moved; (ii) B&H aggregates were observed before
+classification · inert, since checkpoints and thresholds are frozen and
+nothing adjustable remains downstream. Authorized harness modification
+is narrowly scoped to the closed-form reference function and the
+tolerance constant · nothing in gate computation, episode execution,
+artifact schema, or policy code.
 
 ---
 

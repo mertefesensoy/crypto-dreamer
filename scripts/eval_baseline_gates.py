@@ -38,10 +38,11 @@ Integrity preconditions (recorded in the artifact; exit 3 on violation)
 -----------------------------------------------------------------------
 - flat : every per-episode r_i == 0.0 exactly AND every per-episode
   turnover == 0.0 exactly (ADR-007 (C)).
-- bh   : per span, |env span cumulative - closed-form kline value| <= 1e-4
-  (entry at span-start close paying 0.1% taker fee + 2 bps slippage, mark
+- bh   : per span, |env span cumulative - closed-form kline value| <= 1e-5
+  (amendment A3, 2026-06-11: entry at span-start close paying 0.1% taker
+  fee + 2 bps slippage, the analytic second-bar dust-settlement sale, mark
   at span-end close). In smoke, the analogous 1440-step check runs
-  (closes at start_row and start_row + 1440).
+  (closes at start_row, start_row + 1, and start_row + 1440).
 
 Exit codes: 0 ok - 2 episodes-artifact SHA-256 mismatch - 3 integrity
 failure (artifacts and run-log line are still written first).
@@ -81,7 +82,7 @@ INITIAL_CASH = 10_000.0
 EPISODE_STEPS = 1440
 BH_SPAN_STEPS = 4320
 BH_INTERVALS_PER_SPAN = 3
-BH_INTEGRITY_TOL = 1e-4
+BH_INTEGRITY_TOL = 1e-5  # tightened 1e-4 -> 1e-5 by amendment A3 (2026-06-11)
 SHARPE_ANNUALIZER = math.sqrt(365.0)  # daily episodes, crypto trades 365 days
 SHARPE_STD_GUARD = 1e-12  # std(r_i, ddof=1) below this -> Sharpe undefined (null)
 HARNESS_SEED = 42  # belt-and-braces framework seeding (ADR-007 (C))
@@ -305,7 +306,9 @@ def run_bh(policy, market: MarketData, spec: dict, subset: str):
 
         span_cumulative = math.log(curve[steps] / INITIAL_CASH)
         closed_form = bh_closed_form_logret(
-            float(close.iloc[start_row]), float(close.iloc[start_row + steps])
+            float(close.iloc[start_row]),
+            float(close.iloc[start_row + 1]),  # second bar (A3 dust settlement)
+            float(close.iloc[start_row + steps]),
         )
         abs_diff = abs(span_cumulative - closed_form)
         ok = abs_diff <= BH_INTEGRITY_TOL

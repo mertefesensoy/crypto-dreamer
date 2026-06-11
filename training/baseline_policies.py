@@ -176,30 +176,47 @@ def get_policy(
 
 def bh_closed_form_logret(
     close_start: float,
+    close_second: float,
     close_end: float,
     fee: float = 0.001,
     slippage: float = 0.0002,
     initial_cash: float = 10000.0,
 ) -> float:
-    """Closed-form kline B&H cumulative net log-return (ADR-007 (C)).
+    """Closed-form kline B&H cumulative net log-return (ADR-007 (C),
+    reference corrected by amendment A3, 2026-06-11).
 
-    Enter at the span-start close paying the taker fee (fee x notional,
-    10.0 on the 10,000 default) and linear slippage (price marked up by
-    ``1 + slippage``), mark to market at the span-end close:
+    Kline-only and independent of env code. Models the env's actual
+    deterministic constant-action-4 path:
 
-        ln((initial_cash * close_end / (close_start * (1 + slippage))
-            - initial_cash * fee) / initial_cash)
+    1. Entry at the span-start close marked up by ``1 + slippage``,
+       paying the taker fee (``fee x notional``, 10.0 on the 10,000
+       default) -> ``btc0 = initial_cash / (close_start * (1+slippage))``
+       with cash ``-initial_cash*fee``.
+    2. Second-bar dust-settlement sale (A3): the env's rebalance rule
+       gives ``delta_value = cash`` on every later step, so at the
+       SECOND bar it sells ``initial_cash*fee`` notional at the close
+       marked down by ``1 - slippage``, paying ``initial_cash*fee**2``
+       fee and leaving cash ``-initial_cash*fee**2`` (-0.01 default).
+       The remaining sub-cent dust cascade is bounded below ~6e-7 log
+       and absorbed by the 1e-5 tolerance.
+    3. Mark to market at the span-end close.
 
-    With defaults this is exactly the ADR text
-    ``ln((10000 * close_end / (close_start * 1.0002) - 10) / 10000)``.
-    The harness asserts its env-rolled B&H span return matches this value
-    within |diff| <= 1e-4 (integrity precondition, not a gate). Pure
-    float64 - the Phase-3 classifier compares at full precision.
+        btc_ref = initial_cash/(close_start*(1+slippage))
+                  - initial_cash*fee/(close_second*(1-slippage))
+        ref     = ln((btc_ref*close_end - initial_cash*fee**2)/initial_cash)
+
+    The pre-A3 formula assumed a constant -10 cash balance with the full
+    entry position held, mispricing the span move on the ~$10 sold at
+    the second bar (divergence ~1.001e-3 x span log move; failed span
+    2025-02 at -11.86%). The harness asserts its env-rolled B&H span
+    return matches this reference within |diff| <= 1e-5 (integrity
+    precondition, not a gate). Pure float64.
     """
-    return math.log(
-        (initial_cash * close_end / (close_start * (1.0 + slippage)) - initial_cash * fee)
-        / initial_cash
+    entry_fee = initial_cash * fee
+    btc_ref = initial_cash / (close_start * (1.0 + slippage)) - entry_fee / (
+        close_second * (1.0 - slippage)
     )
+    return math.log((btc_ref * close_end - entry_fee * fee) / initial_cash)
 
 
 def _self_test() -> None:
@@ -240,15 +257,22 @@ def _self_test() -> None:
     assert head == seq1, "reset() must not reseed: stream must equal uninterrupted draw"
     print(f"OK random: 200 actions identical across instances, head={seq1[:8]}")
 
-    # Closed-form B&H vs hand-computed reference:
-    # 10000*101/(100*1.0002) = 10097.980403919217; -10 fee -> 10087.980403919217;
-    # /10000 -> 1.0087980403919217; ln -> 0.008759563152730545.
-    hand = 0.008759563152730545
-    got = bh_closed_form_logret(100.0, 101.0)
+    # Closed-form B&H vs step-by-step hand arithmetic (A3 reference):
+    # entry: btc0 = 10000/(100*1.0002), cash -10; second bar at 100.5:
+    # sell 10 notional at 100.5*0.9998, fee 0.01 -> cash -0.01; mark 101.
+    btc0 = 10000.0 / (100.0 * 1.0002)
+    btc1 = btc0 - 10.0 / (100.5 * 0.9998)
+    hand = math.log((btc1 * 101.0 - 0.01) / 10000.0)
+    got = bh_closed_form_logret(100.0, 100.5, 101.0)
     assert abs(got - hand) <= 1e-12, f"bh closed form {got!r} != hand value {hand!r}"
-    # Degenerate sanity: no price move -> pure entry cost, strictly negative.
-    assert bh_closed_form_logret(100.0, 100.0) < 0.0
-    print(f"OK bh_closed_form_logret(100,101) = {got!r}")
+    # Degenerate sanity: no price move -> pure entry + settlement cost < 0.
+    assert bh_closed_form_logret(100.0, 100.0, 100.0) < 0.0
+    # A3 mechanism check: the second-bar sale removes ~10 notional of
+    # exposure, so a +1% move from the second bar on lowers the reference
+    # by ~1e-3 x move vs the pre-A3 formula's full-exposure value.
+    pre_a3 = math.log((10000.0 * 101.0 / (100.0 * 1.0002) - 10.0) / 10000.0)
+    assert pre_a3 > got, "A3 reference must price the sold exposure"
+    print(f"OK bh_closed_form_logret(100,100.5,101) = {got!r}")
 
     # Factory error paths.
     for bad in ("nope", "AGENT"):

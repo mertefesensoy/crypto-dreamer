@@ -1,0 +1,67 @@
+{
+  "schema": "adr007-action-distribution-v1",
+  "generated_utc": "2026-06-11T07:10:40+00:00",
+  "note": "read-only findings support, generated after gate classification; not a gate input",
+  "per_seed": {
+    "42": {
+      "steps": 103680,
+      "action_counts": {
+        "0": 0,
+        "1": 0,
+        "2": 103680,
+        "3": 0,
+        "4": 0
+      },
+      "action_fractions": {
+        "0": 0.0,
+        "1": 0.0,
+        "2": 1.0,
+        "3": 0.0,
+        "4": 0.0
+      },
+      "episode_modal_actions": {
+        "2": 72
+      }
+    },
+    "0": {
+      "steps": 103680,
+      "action_counts": {
+        "0": 0,
+        "1": 0,
+        "2": 103677,
+        "3": 3,
+        "4": 0
+      },
+      "action_fractions": {
+        "0": 0.0,
+        "1": 0.0,
+        "2": 0.9999710648148148,
+        "3": 2.8935185185185186e-05,
+        "4": 0.0
+      },
+      "episode_modal_actions": {
+        "2": 72
+      }
+    },
+    "123": {
+      "steps": 103680,
+      "action_counts": {
+        "0": 0,
+        "1": 0,
+        "2": 103680,
+        "3": 0,
+        "4": 0
+      },
+      "action_fractions": {
+        "0": 0.0,
+        "1": 0.0,
+        "2": 1.0,
+        "3": 0.0,
+        "4": 0.0
+      },
+      "episode_modal_actions": {
+        "2": 72
+      }
+    }
+  }
+}
